@@ -35,10 +35,10 @@ namespace Stitcher.Samples.Tests
         {
             // Run the sample code.
             var result = _createSample.CreateVodSession(
-                _fixture.ProjectId, _fixture.LocationId, _fixture.VodSourceUri, _fixture.VodAdTagUri);
+                _fixture.ProjectId, _fixture.LocationId, _fixture.TestVodConfigId);
 
             Assert.Equal(_fixture.LocationId, result.VodSessionName.LocationId);
-            Assert.Contains("/vodSessions/", result.VodSessionName.ToString());
+            Assert.Contains(_fixture.TestVodConfigId, result.VodConfigAsVodConfigName.VodConfigId);
         }
     }
 }

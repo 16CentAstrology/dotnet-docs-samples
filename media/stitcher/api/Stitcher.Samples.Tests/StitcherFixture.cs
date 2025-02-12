@@ -24,42 +24,73 @@ using System.Threading.Tasks;
 using Xunit;
 
 [CollectionDefinition(nameof(StitcherFixture))]
-public class StitcherFixture : IDisposable, ICollectionFixture<StitcherFixture>
+public class StitcherFixture : IDisposable, IAsyncLifetime, ICollectionFixture<StitcherFixture>
 {
     public string ProjectId { get; }
     public string LocationId { get; } = "us-central1";
-    public string SlateIdPrefix { get; } = "test-slate";
-    public string AkamaiCdnKeyIdPrefix { get; } = "test-akamai-cdn-key";
-    public string CloudCdnKeyIdPrefix { get; } = "test-cloud-cdn-key";
+    public string SlateIdPrefix { get; } = "slate";
+    public string AkamaiCdnKeyIdPrefix { get; } = "akamai-cdn";
+    public string CloudCdnKeyIdPrefix { get; } = "cloud-cdn";
+    public string MediaCdnKeyIdPrefix { get; } = "media-cdn";
+    public string LiveConfigIdPrefix { get; } = "live-config";
+    public string VodConfigIdPrefix { get; } = "vod-config";
 
     public List<string> SlateIds { get; } = new List<string>();
     public List<string> CdnKeyIds { get; } = new List<string>();
+    public List<string> LiveConfigIds { get; } = new List<string>();
+    public List<string> VodConfigIds { get; } = new List<string>();
 
     public Slate TestSlate { get; set; }
     public string TestSlateId { get; set; }
+
+    public Slate TestSlateForLiveConfig { get; set; }
+    public string TestSlateForLiveConfigId { get; set; }
     public string TestSlateUri { get; } = "https://storage.googleapis.com/cloud-samples-data/media/ForBiggerEscapes.mp4";
     public string UpdateSlateUri { get; } = "https://storage.googleapis.com/cloud-samples-data/media/ForBiggerJoyrides.mp4";
     public string VodSourceUri { get; } = "https://storage.googleapis.com/cloud-samples-data/media/hls-vod/manifest.m3u8";
+    public string UpdateVodSourceUri { get; } = "https://storage.googleapis.com/cloud-samples-data/media/hls-vod/manifest.mpd";
     public string VodAdTagUri { get; } = "https://pubads.g.doubleclick.net/gampad/ads?iu=/21775744923/external/vmap_ad_samples&sz=640x480&cust_params=sample_ar%3Dpreonly&ciu_szs=300x250%2C728x90&gdfp_req=1&ad_rule=1&output=vmap&unviewed_position_start=1&env=vp&impl=s&correlator=";
     public string LiveSourceUri { get; } = "https://storage.googleapis.com/cloud-samples-data/media/hls-live/manifest.m3u8";
     public string LiveAdTagUri { get; } = "https://pubads.g.doubleclick.net/gampad/ads?iu=/21775744923/external/single_ad_samples&sz=640x480&cust_params=sample_ct%3Dlinear&ciu_szs=300x250%2C728x90&gdfp_req=1&output=vast&unviewed_position_start=1&env=vp&impl=s&correlator=";
 
     public string Hostname { get; } = "cdn.example.com";
-    public string UpdateHostname { get; } = "update.cdn.example.com";
+    public string UpdatedAkamaiHostname { get; } = "updated.akamai.cdn.example.com";
+    public string UpdatedCloudCdnHostname { get; } = "updated.cloud.cdn.example.com";
+    public string UpdatedMediaCdnHostname { get; } = "updated.media.cdn.example.com";
 
     public CdnKey TestCloudCdnKey { get; set; }
     public string TestCloudCdnKeyId { get; set; }
-    public string CloudCdnKeyName { get; } = "gcdn-key";
-    public string CloudCdnTokenKey { get; } = "VGhpcyBpcyBhIHRlc3Qgc3RyaW5nLg==";
-    public string UpdatedCloudCdnTokenKey = "VGhpcyBpcyBhbiB1cGRhdGVkIHRlc3Qgc3RyaW5nLg==";
+
+    public CdnKey TestAkamaiCdnKey { get; set; }
+    public string TestAkamaiCdnKeyId { get; set; }
+
+    public string KeyName { get; } = "my-key";
+    public string CloudCdnPrivateKey { get; } = "VGhpcyBpcyBhIHRlc3Qgc3RyaW5nLg==";
+    public string MediaCdnPrivateKey { get; } = "MTIzNDU2Nzg5MDEyMzQ1Njc4Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNAAA";
     public string AkamaiTokenKey { get; } = "VGhpcyBpcyBhIHRlc3Qgc3RyaW5nLg==";
+    public string UpdatedAkamaiTokenKey { get; } = "VGhpcyBpcyBhbiB1cGRhdGVkIHRlc3Qgc3RyaW5nLg==";
+
+    public LiveConfig TestLiveConfig { get; set; }
+    public string TestLiveConfigId { get; set; }
+    public VodConfig TestVodConfig { get; set; }
+    public string TestVodConfigId { get; set; }
 
     private readonly CreateSlateSample _createSlateSample = new CreateSlateSample();
     private readonly ListSlatesSample _listSlatesSample = new ListSlatesSample();
     private readonly DeleteSlateSample _deleteSlateSample = new DeleteSlateSample();
     private readonly CreateCdnKeySample _createCdnKeySample = new CreateCdnKeySample();
+    private readonly CreateCdnKeyAkamaiSample _createCdnKeyAkamaiSample = new CreateCdnKeyAkamaiSample();
+
     private readonly ListCdnKeysSample _listCdnKeysSample = new ListCdnKeysSample();
     private readonly DeleteCdnKeySample _deleteCdnKeySample = new DeleteCdnKeySample();
+
+    private readonly CreateLiveConfigSample _createLiveConfigSample = new CreateLiveConfigSample();
+    private readonly ListLiveConfigsSample _listLiveConfigsSample = new ListLiveConfigsSample();
+    private readonly DeleteLiveConfigSample _deleteLiveConfigSample = new DeleteLiveConfigSample();
+
+    private readonly CreateVodConfigSample _createVodConfigSample = new CreateVodConfigSample();
+    private readonly ListVodConfigsSample _listVodConfigsSample = new ListVodConfigsSample();
+    private readonly DeleteVodConfigSample _deleteVodConfigSample = new DeleteVodConfigSample();
 
     private HttpClient httpClient;
 
@@ -70,23 +101,42 @@ public class StitcherFixture : IDisposable, ICollectionFixture<StitcherFixture>
         {
             throw new Exception("missing GOOGLE_PROJECT_ID");
         }
+    }
+    public async Task InitializeAsync()
+    {
+        await CleanOutdatedResources();
 
-        CleanOutdatedResources();
-
-        TestSlateId = $"{SlateIdPrefix}-{TimestampId()}";
+        TestSlateId = $"{SlateIdPrefix}-{RandomId()}-{TimestampId()}";
         SlateIds.Add(TestSlateId);
-        TestSlate = _createSlateSample.CreateSlate(ProjectId, LocationId, TestSlateId, TestSlateUri);
+        TestSlate = await _createSlateSample.CreateSlateAsync(ProjectId, LocationId, TestSlateId, TestSlateUri);
 
-        TestCloudCdnKeyId = $"{CloudCdnKeyIdPrefix}-{TimestampId()}";
+        TestSlateForLiveConfigId = $"{SlateIdPrefix}-{RandomId()}-{TimestampId()}";
+        SlateIds.Add(TestSlateForLiveConfigId);
+        TestSlateForLiveConfig = await _createSlateSample.CreateSlateAsync(ProjectId, LocationId, TestSlateForLiveConfigId, TestSlateUri);
+
+        TestCloudCdnKeyId = $"{CloudCdnKeyIdPrefix}-{RandomId()}-{TimestampId()}";
         CdnKeyIds.Add(TestCloudCdnKeyId);
-        TestCloudCdnKey = _createCdnKeySample.CreateCdnKey(ProjectId, LocationId, TestCloudCdnKeyId, Hostname, CloudCdnKeyName, CloudCdnTokenKey, null);
+        TestCloudCdnKey = await _createCdnKeySample.CreateCdnKeyAsync(ProjectId, LocationId, TestCloudCdnKeyId, Hostname, KeyName, CloudCdnPrivateKey, false);
+
+        TestAkamaiCdnKeyId = $"{AkamaiCdnKeyIdPrefix}-{RandomId()}-{TimestampId()}";
+        CdnKeyIds.Add(TestAkamaiCdnKeyId);
+        TestAkamaiCdnKey = await _createCdnKeyAkamaiSample.CreateCdnKeyAkamaiAsync(ProjectId, LocationId, TestAkamaiCdnKeyId, Hostname, AkamaiTokenKey);
+
+        TestLiveConfigId = $"{LiveConfigIdPrefix}-{RandomId()}-{TimestampId()}";
+        LiveConfigIds.Add(TestLiveConfigId);
+        TestLiveConfig = await _createLiveConfigSample.CreateLiveConfigAsync(ProjectId, LocationId, TestLiveConfigId, LiveSourceUri, LiveAdTagUri, TestSlateForLiveConfigId);
+
+        TestVodConfigId = $"{VodConfigIdPrefix}-{RandomId()}-{TimestampId()}";
+        VodConfigIds.Add(TestVodConfigId);
+        TestVodConfig = await _createVodConfigSample.CreateVodConfigAsync(ProjectId, LocationId, TestVodConfigId, VodSourceUri, VodAdTagUri);
 
         httpClient = new HttpClient();
     }
 
-    public void CleanOutdatedResources()
+    public async Task CleanOutdatedResources()
     {
         int TWO_HOURS_IN_SECS = 7200;
+        long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         // Slates don't include creation time information, so encode it
         // in the slate name. Slates have a low quota limit, so we need to
         // remove outdated ones before the test begins (and creates more).
@@ -101,10 +151,9 @@ public class StitcherFixture : IDisposable, ICollectionFixture<StitcherFixture>
                 bool success = long.TryParse(temp, out long creation);
                 if (success)
                 {
-                    long now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
                     if ((now - creation) >= TWO_HOURS_IN_SECS)
                     {
-                        DeleteSlate(id);
+                        await DeleteSlate(id);
                     }
                 }
             }
@@ -123,10 +172,51 @@ public class StitcherFixture : IDisposable, ICollectionFixture<StitcherFixture>
                 bool success = long.TryParse(temp, out long creation);
                 if (success)
                 {
-                    long now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
                     if ((now - creation) >= TWO_HOURS_IN_SECS)
                     {
-                        DeleteCdnKey(id);
+                        await DeleteCdnKey(id);
+                    }
+                }
+            }
+        }
+        // Live configs don't include creation time information, so encode it
+        // in the config name. Live configs have a low quota limit, so we need to
+        // remove outdated ones before the test begins (and creates more).
+        var liveConfigs = _listLiveConfigsSample.ListLiveConfigs(ProjectId, LocationId);
+        foreach (LiveConfig liveConfig in liveConfigs)
+        {
+            string id = liveConfig.LiveConfigName.LiveConfigId;
+            string[] subs = id.Split('-');
+            if (subs.Length > 0)
+            {
+                string temp = subs[(subs.Length - 1)];
+                bool success = long.TryParse(temp, out long creation);
+                if (success)
+                {
+                    if ((now - creation) >= TWO_HOURS_IN_SECS)
+                    {
+                        await DeleteLiveConfig(id);
+                    }
+                }
+            }
+        }
+        // VOD configs don't include creation time information, so encode it
+        // in the config name. VOD configs have a low quota limit, so we need to
+        // remove outdated ones before the test begins (and creates more).
+        var vodConfigs = _listVodConfigsSample.ListVodConfigs(ProjectId, LocationId);
+        foreach (VodConfig vodConfig in vodConfigs)
+        {
+            string id = vodConfig.VodConfigName.VodConfigId;
+            string[] subs = id.Split('-');
+            if (subs.Length > 0)
+            {
+                string temp = subs[(subs.Length - 1)];
+                bool success = long.TryParse(temp, out long creation);
+                if (success)
+                {
+                    if ((now - creation) >= TWO_HOURS_IN_SECS)
+                    {
+                        await DeleteVodConfig(id);
                     }
                 }
             }
@@ -135,24 +225,37 @@ public class StitcherFixture : IDisposable, ICollectionFixture<StitcherFixture>
 
     public void Dispose()
     {
-        // Delete slates.
-        foreach (string id in SlateIds)
-        {
-            DeleteSlate(id);
-        }
-        // Delete CDN keys.
-        foreach (string id in CdnKeyIds)
-        {
-            DeleteCdnKey(id);
-        }
         httpClient.Dispose();
     }
 
-    public void DeleteSlate(string id)
+    public async Task DisposeAsync()
+    {
+        foreach (string id in SlateIds)
+        {
+            await DeleteSlate(id);
+        }
+
+        foreach (string id in CdnKeyIds)
+        {
+            await DeleteCdnKey(id);
+        }
+
+        foreach (string id in LiveConfigIds)
+        {
+            await DeleteLiveConfig(id);
+        }
+
+        foreach (string id in VodConfigIds)
+        {
+            await DeleteVodConfig(id);
+        }
+    }
+
+    public async Task DeleteSlate(string id)
     {
         try
         {
-            _deleteSlateSample.DeleteSlate(ProjectId, LocationId, id);
+            await _deleteSlateSample.DeleteSlateAsync(ProjectId, LocationId, id);
         }
         catch (Exception e)
         {
@@ -160,11 +263,11 @@ public class StitcherFixture : IDisposable, ICollectionFixture<StitcherFixture>
         }
     }
 
-    public void DeleteCdnKey(string id)
+    public async Task DeleteCdnKey(string id)
     {
         try
         {
-            _deleteCdnKeySample.DeleteCdnKey(ProjectId, LocationId, id);
+            await _deleteCdnKeySample.DeleteCdnKeyAsync(ProjectId, LocationId, id);
         }
         catch (Exception e)
         {
@@ -172,14 +275,38 @@ public class StitcherFixture : IDisposable, ICollectionFixture<StitcherFixture>
         }
     }
 
+    public async Task DeleteLiveConfig(string id)
+    {
+        try
+        {
+            await _deleteLiveConfigSample.DeleteLiveConfigAsync(ProjectId, LocationId, id);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("Delete failed for live config: " + id + " with error: " + e.ToString());
+        }
+    }
+
+    public async Task DeleteVodConfig(string id)
+    {
+        try
+        {
+            await _deleteVodConfigSample.DeleteVodConfigAsync(ProjectId, LocationId, id);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("Delete failed for VOD config: " + id + " with error: " + e.ToString());
+        }
+    }
+
     public string TimestampId()
     {
-        return $"csharp-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
+        return $"{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
     }
 
     public string RandomId()
     {
-        return $"csharp-{System.Guid.NewGuid()}";
+        return $"{System.Guid.NewGuid()}";
     }
 
     public async Task<String> GetHttpResponse(string url)

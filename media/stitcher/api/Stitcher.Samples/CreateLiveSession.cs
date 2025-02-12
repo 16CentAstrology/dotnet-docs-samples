@@ -21,7 +21,7 @@ using Google.Cloud.Video.Stitcher.V1;
 public class CreateLiveSessionSample
 {
     public LiveSession CreateLiveSession(
-        string projectId, string location, string sourceUri, string adTagUri, string slateId)
+        string projectId, string location, string liveConfigId)
     {
         // Create the client.
         VideoStitcherServiceClient client = VideoStitcherServiceClient.Create();
@@ -31,16 +31,9 @@ public class CreateLiveSessionSample
             Parent = $"projects/{projectId}/locations/{location}",
             LiveSession = new LiveSession
             {
-                SourceUri = sourceUri,
-                DefaultSlateId = slateId
+                LiveConfig = LiveConfigName.FormatProjectLocationLiveConfig(projectId, location, liveConfigId)
             }
         };
-
-        AdTag adTag = new AdTag
-        {
-            Uri = adTagUri
-        };
-        request.LiveSession.AdTagMap.Add("default", adTag);
 
         // Call the API.
         LiveSession session = client.CreateLiveSession(request);

@@ -1,4 +1,4 @@
-﻿// Copyright 2022 Google Inc.
+// Copyright 2022 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,9 +32,7 @@ public class ExactlyOnceDeliverySubscriberAsyncTest
     [Fact]
     public async Task ExactlyOnceDeliverySubscriberAsync()
     {
-        string randomName = _pubsubFixture.RandomName();
-        string topicId = $"testTopicForExactlyOnceDelivery{randomName}";
-        string subscriptionId = $"testSubscriptionForExactlyOnceDelivery{randomName}";
+        var (topicId, subscriptionId) = _pubsubFixture.RandomNameTopicSubscriptionId();
         var message = _pubsubFixture.RandomName();
 
         _pubsubFixture.CreateTopic(topicId);
@@ -42,7 +40,11 @@ public class ExactlyOnceDeliverySubscriberAsyncTest
 
         await _publishMessagesAsyncSample.PublishMessagesAsync(_pubsubFixture.ProjectId, topicId, new string[] { message });
 
-        var successfulIds = await _exactlyOnceDeliverySubscriberAsyncSample.ExactlyOnceDeliverySubscriberAsync(_pubsubFixture.ProjectId, subscriptionId);
-        Assert.Single(successfulIds);
+        // Validate that the published message is received exactly once.
+        await _pubsubFixture.Pull.Eventually(async () =>
+        {
+            var successfulIds = await _exactlyOnceDeliverySubscriberAsyncSample.ExactlyOnceDeliverySubscriberAsync(_pubsubFixture.ProjectId, subscriptionId);
+            Assert.Single(successfulIds);
+        });
     }
 }

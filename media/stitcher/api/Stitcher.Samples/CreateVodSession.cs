@@ -22,7 +22,7 @@ using Google.Cloud.Video.Stitcher.V1;
 public class CreateVodSessionSample
 {
     public VodSession CreateVodSession(
-        string projectId, string location, string sourceUri, string adTagUri)
+        string projectId, string location, string vodConfigId)
     {
         // Create the client.
         VideoStitcherServiceClient client = VideoStitcherServiceClient.Create();
@@ -32,8 +32,8 @@ public class CreateVodSessionSample
             ParentAsLocationName = LocationName.FromProjectLocation(projectId, location),
             VodSession = new VodSession
             {
-                SourceUri = sourceUri,
-                AdTagUri = adTagUri
+                VodConfig = VodConfigName.FormatProjectLocationVodConfig(projectId, location, vodConfigId),
+                AdTracking = AdTracking.Server
             }
         };
 
