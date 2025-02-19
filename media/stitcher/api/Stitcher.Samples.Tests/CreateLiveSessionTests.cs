@@ -35,7 +35,7 @@ namespace Stitcher.Samples.Tests
         {
             // Run the sample code.
             var result = _createSample.CreateLiveSession(
-                _fixture.ProjectId, _fixture.LocationId, _fixture.LiveSourceUri, _fixture.LiveAdTagUri, _fixture.TestSlateId);
+                _fixture.ProjectId, _fixture.LocationId, _fixture.TestLiveConfigId);
 
             Assert.Equal(_fixture.LocationId, result.LiveSessionName.LocationId);
             Assert.Contains("/liveSessions/", result.LiveSessionName.ToString());
